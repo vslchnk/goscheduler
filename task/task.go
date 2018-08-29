@@ -1,19 +1,22 @@
 package task
 
 import (
+	"context"
 	"fmt"
 	"reflect"
 	"runtime"
+	"time"
 )
 
 type Task struct {
-	Period   float64
-	TaskTime float64
-	Delay    float64
-	Do       func() error
+	Name     string
+	Period   time.Duration
+	TaskTime time.Duration
+	Delay    time.Duration
+	Do       func(ctx context.Context) error
 }
 
-func Create(period float64, taskTime float64, delay float64, do func() error) (task Task, err error) {
+func Create(name string, period time.Duration, taskTime time.Duration, delay time.Duration, do func(ctx context.Context) error) (task Task, err error) {
 	if period < 0 || taskTime < 0 || delay < 0 {
 		return task, fmt.Errorf("Period, TaskTime or Delay less than 0")
 	}
@@ -22,6 +25,7 @@ func Create(period float64, taskTime float64, delay float64, do func() error) (t
 		return task, fmt.Errorf("No function provided")
 	}
 
+	task.Name = name
 	task.Period = period
 	task.TaskTime = taskTime
 	task.Delay = delay
@@ -31,5 +35,5 @@ func Create(period float64, taskTime float64, delay float64, do func() error) (t
 }
 
 func (t Task) Print() {
-	fmt.Printf("Period: %v TaskTime: %v Delay: %v Do: %v\n", t.Period, t.TaskTime, t.Delay, runtime.FuncForPC(reflect.ValueOf(t.Do).Pointer()).Name())
+	fmt.Printf("Name: %v; Period: %v; TaskTime: %v; Delay: %v; Do: %v\n", t.Name, t.Period, t.TaskTime, t.Delay, runtime.FuncForPC(reflect.ValueOf(t.Do).Pointer()).Name())
 }
