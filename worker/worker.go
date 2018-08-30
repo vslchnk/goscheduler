@@ -98,7 +98,7 @@ func (w *Worker) startJob(n int) {
 	w.Jobs[n].ctx = ctx
 	w.Jobs[n].cancelCtx = cancel
 
-	delayChan := time.NewTimer(time.Second * time.Duration(w.Jobs[n].task.Delay)).C
+	delayChan := time.NewTimer(time.Duration(w.Jobs[n].task.Delay)).C
 	for {
 		select {
 		case <-ctx.Done():
@@ -108,9 +108,9 @@ func (w *Worker) startJob(n int) {
 			return
 		case <-delayChan:
 			fmt.Println("Delay is done")
-			var tickChan *time.Ticker
-			//tickChan := time.NewTicker(time.Nanosecond).C
-
+			//tickChan := time.NewTicker(time.Duration(w.Jobs[n].task.Period)).C
+			//tickChan := time.NewTicker(1 * time.Nanosecond).C
+			tickChan := time.NewTimer(0).C
 			for {
 				select {
 				case <-ctx.Done():
@@ -123,8 +123,9 @@ func (w *Worker) startJob(n int) {
 					c2, cancel := context.WithCancel(ctx)
 					c1 := context.WithValue(c2, "func", cancel)
 					go w.Jobs[n].task.Do(c1)
-					tickChan = time.NewTicker(time.Second * time.Duration(w.Jobs[n].task.Period)).C
-					expiredChan := time.NewTimer(time.Second * time.Duration(w.Jobs[n].task.TaskTime)).C
+					//tickChan = time.NewTicker(time.Duration(w.Jobs[n].task.Period)).C
+					tickChan = time.NewTimer(time.Duration(w.Jobs[n].task.Period)).C
+					expiredChan := time.NewTimer(time.Duration(w.Jobs[n].task.TaskTime)).C
 				Looptick:
 					for {
 						select {

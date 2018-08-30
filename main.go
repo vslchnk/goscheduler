@@ -56,7 +56,7 @@ func main() {
 	foo := outer("hello")
 	//foo2 := outer2("hello", "piss")
 
-	a, _ := t.Create("printing", time.Second*1, time.Nanosecond*2, time.Nanosecond, foo)
+	a, _ := t.Create("printing", time.Second*1, time.Second*1, time.Nanosecond, foo)
 	a.Print()
 	//a.Delay = 20.0
 	a.Print()
@@ -65,7 +65,7 @@ func main() {
 	worker.PrintAll()
 	fmt.Println(worker.GetNumberByName("printing"))
 	worker.Start(0)
-	time.Sleep(9 * time.Second)
+	//time.Sleep(9 * time.Second)
 	worker.Stop(0)
 	time.Sleep(5 * time.Second)
 	/*c2, cancel := context.WithCancel(context.Background())
