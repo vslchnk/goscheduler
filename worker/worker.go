@@ -20,9 +20,9 @@ const (
 	k    jobstatus = "killed"
 )
 
-type Worker struct {
+type worker struct {
 	sync.Mutex
-	jobs []*job
+	jobs map[string]*job
 }
 
 type job struct {
@@ -33,22 +33,27 @@ type job struct {
 	status    jobstatus
 }
 
-// checks if there is a job with number n in job pool
-func (w *Worker) check(n int) bool {
+// creates new worker
+func NewWorker() *worker {
+	w := worker{}
+	w.jobs = make(map[string]*job)
+	return &w
+}
+
+// checks if there is a job with name n in job pool
+func (w *worker) check(n string) bool {
 	defer w.Unlock()
 	w.Lock()
 
-	if n < 0 || n > len(w.jobs)-1 {
-		return false
-	}
+	_, ok := w.jobs[n]
 
-	return true
+	return ok
 }
 
-// change task in job pool by its number
-func (w *Worker) ChangeTask(n int, task t.Task) error {
+// change task in job pool by its name
+func (w *worker) ChangeTask(n string, task t.Task) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	defer w.jobs[n].Unlock()
@@ -58,46 +63,29 @@ func (w *Worker) ChangeTask(n int, task t.Task) error {
 		return fmt.Errorf("Job is working, must be stopped before being changed")
 	}
 
-	if w.jobs[n].task.GetName() == task.GetName() {
-		return fmt.Errorf("Function with name %v already exist", task.GetName())
-	}
-
-	w.jobs[n].task.SetName(task.GetName())
-	if err := w.jobs[n].task.SetPeriod(task.GetPeriod()); err != nil {
-		return fmt.Errorf("Error in ChangeTask(): %v", err)
-	}
-	if err := w.jobs[n].task.SetTaskTime(task.GetTaskTime()); err != nil {
-		return fmt.Errorf("Error in ChangeTask(): %v", err)
-	}
-	if err := w.jobs[n].task.SetDelay(task.GetDelay()); err != nil {
-		return fmt.Errorf("Error in ChangeTask(): %v", err)
-	}
-	if err := w.jobs[n].task.SetDoFunc(task.GetDoFunc()); err != nil {
-		return fmt.Errorf("Error in ChangeTask(): %v", err)
-	}
+	w.jobs[n].task = task
 
 	return nil
 }
 
-// adds task to job pool, if name of task is unique, if ok return number of task in job pool, if not return number of task with the same name and error
-func (w *Worker) Add(task t.Task) (int, error) {
-	for k, v := range w.jobs {
-		if v.task.GetName() == task.GetName() {
-			return k, fmt.Errorf("Function with name %v already exist", task.GetName())
-		}
+// adds task to job pool, if name n of job is unique, if ok return number of job in job pool, if not return number of job with the same name and error
+func (w *worker) Add(task t.Task, n string) error {
+
+	if w.check(n) {
+		return fmt.Errorf("Function with name %v already exist", n)
 	}
 
 	j := &job{task: task, status: cnw}
 
 	w.Lock()
-	w.jobs = append(w.jobs, j)
+	w.jobs[n] = j
 	w.Unlock()
 
-	return len(w.jobs) - 1, nil
+	return nil
 }
 
 // prints jobs in job pool
-func (w Worker) PrintAll() error {
+func (w worker) PrintAll() error {
 	for k, _ := range w.jobs {
 		if err := w.Print(k); err != nil {
 			return fmt.Errorf("Error in PrintAll(): %v", err)
@@ -107,40 +95,29 @@ func (w Worker) PrintAll() error {
 	return nil
 }
 
-// prints job from job pool by its number
-func (w Worker) Print(n int) error {
+// prints job from job pool by its name
+func (w worker) Print(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
-	fmt.Printf("Number: %v; Status: %v; ", n, w.jobs[n].status)
+	fmt.Printf("Name: %v; Status: %v; ", n, w.jobs[n].status)
 	w.jobs[n].task.Print()
 
 	return nil
 }
 
-// returns job number in job pool by task's name
-func (w Worker) GetNumberByName(name string) (int, error) {
-	for k, v := range w.jobs {
-		if v.task.GetName() == name {
-			return k, nil
-		}
-	}
-
-	return -100, fmt.Errorf("No task with such name")
-}
-
-// starts job by its number
-func (w *Worker) Start(n int) error {
+// starts job by its name
+func (w *worker) Start(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	w.jobs[n].Lock()
 
 	if w.jobs[n].status == wtnf || w.jobs[n].status == wtf {
 		w.jobs[n].Unlock()
-		return fmt.Errorf("Job number %v is already working, its status: %v", n, w.jobs[n].status)
+		return fmt.Errorf("Job name %v is already working, its status: %v", n, w.jobs[n].status)
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -156,7 +133,7 @@ func (w *Worker) Start(n int) error {
 }
 
 // starts all jobs if they are stopped or not started
-func (w *Worker) StartAll() error {
+func (w *worker) StartAll() error {
 	for k, _ := range w.jobs {
 		if err := w.Start(k); err != nil {
 			return fmt.Errorf("Error in StartAll(): %v", err)
@@ -166,16 +143,16 @@ func (w *Worker) StartAll() error {
 	return nil
 }
 
-// stops job by its number
-func (w *Worker) Stop(n int) error {
+// stops job by its name
+func (w *worker) Stop(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	w.jobs[n].Lock()
 	if w.jobs[n].status == sss || w.jobs[n].status == ste || w.jobs[n].status == k || w.jobs[n].status == cnw {
 		w.jobs[n].Unlock()
-		return fmt.Errorf("Job number %v is not working, its status: %v", n, w.jobs[n].status)
+		return fmt.Errorf("Job name %v is not working, its status: %v", n, w.jobs[n].status)
 	}
 	w.jobs[n].status = sss
 	w.jobs[n].cancelCtx()
@@ -185,7 +162,7 @@ func (w *Worker) Stop(n int) error {
 }
 
 // stops all jobs if they are not stopped or not started
-func (w *Worker) StopAll() error {
+func (w *worker) StopAll() error {
 	for k, _ := range w.jobs {
 		if err := w.Stop(k); err != nil {
 			return fmt.Errorf("Error in StopAll(): %v", err)
@@ -196,16 +173,16 @@ func (w *Worker) StopAll() error {
 }
 
 // kills job and removes it from pool
-func (w *Worker) Kill(n int) error {
+func (w *worker) Kill(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	w.jobs[n].Lock()
 
 	if w.jobs[n].status == sss || w.jobs[n].status == ste || w.jobs[n].status == k || w.jobs[n].status == cnw {
 		w.jobs[n].Unlock()
-		return fmt.Errorf("Job number %v is not working, its status: %v", n, w.jobs[n].status)
+		return fmt.Errorf("Job name %v is not working, its status: %v", n, w.jobs[n].status)
 	}
 
 	w.jobs[n].status = k
@@ -216,7 +193,7 @@ func (w *Worker) Kill(n int) error {
 }
 
 // kills all jobs and removes them from pool
-func (w *Worker) KillAll() error {
+func (w *worker) KillAll() error {
 	for k, _ := range w.jobs {
 		if err := w.Kill(k); err != nil {
 			return fmt.Errorf("Error in KillAll(): %v", err)
@@ -227,28 +204,26 @@ func (w *Worker) KillAll() error {
 }
 
 // delets job from pool by its number
-func (w *Worker) Delete(n int) error {
+func (w *worker) Delete(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	w.Lock()
 	if w.jobs[n].status == wtf || w.jobs[n].status == wtnf {
 		w.Unlock()
-		return fmt.Errorf("Job number %v is working, its status: %v", n, w.jobs[n].status)
+		return fmt.Errorf("Job name %v is working, its status: %v", n, w.jobs[n].status)
 	}
 
-	copy(w.jobs[n:], w.jobs[n+1:])
-	w.jobs[len(w.jobs)-1] = nil
-	w.jobs = w.jobs[:len(w.jobs)-1]
+	delete(w.jobs, n)
 	w.Unlock()
 
 	return nil
 }
 
 // controls work of job
-func (w *Worker) startJob(n int) {
-	//defer w.deleteKilled(n)
+func (w *worker) startJob(n string) {
+	defer w.deleteKilled(n)
 	defer w.jobs[n].cancelCtx()
 
 	delayChan := time.NewTimer(time.Duration(w.jobs[n].task.GetDelay())).C
@@ -317,9 +292,9 @@ func (w *Worker) startJob(n int) {
 }
 
 // deletes job if it's killed from pool
-func (w *Worker) deleteKilled(n int) error {
+func (w *worker) deleteKilled(n string) error {
 	if !w.check(n) {
-		return fmt.Errorf("No job with number %v in job pool", n)
+		return fmt.Errorf("No job with name %v in job pool", n)
 	}
 
 	if w.jobs[n].status == k {
