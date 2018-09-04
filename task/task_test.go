@@ -22,7 +22,7 @@ func outer(name string) func(ctx context.Context) error {
 func Test_Task_Create(t *testing.T) {
 	foo := outer("hello")
 
-	_, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	_, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -31,7 +31,7 @@ func Test_Task_Create(t *testing.T) {
 
 func Test_Task_CreateWithNilFunc(t *testing.T) {
 
-	_, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, nil)
+	_, err := Create(time.Second*3, time.Second*3, time.Second*1, nil)
 
 	if err == nil {
 		t.Error("Failed to detect error while creating task: ", err)
@@ -41,7 +41,7 @@ func Test_Task_CreateWithNilFunc(t *testing.T) {
 func Test_Task_CreateWithNegativePeriod(t *testing.T) {
 	foo := outer("hello")
 
-	_, err := Create("printing", time.Second*(-3), time.Second*3, time.Second*1, foo)
+	_, err := Create(time.Second*(-3), time.Second*3, time.Second*1, foo)
 
 	if err == nil {
 		t.Error("Failed to detect error while creating task: ", err)
@@ -51,7 +51,7 @@ func Test_Task_CreateWithNegativePeriod(t *testing.T) {
 func Test_Task_CreateWithNegativeTaskTime(t *testing.T) {
 	foo := outer("hello")
 
-	_, err := Create("printing", time.Second*3, time.Second*(-3), time.Second*1, foo)
+	_, err := Create(time.Second*3, time.Second*(-3), time.Second*1, foo)
 
 	if err == nil {
 		t.Error("Failed to detect error while creating task: ", err)
@@ -61,7 +61,7 @@ func Test_Task_CreateWithNegativeTaskTime(t *testing.T) {
 func Test_Task_CreateWithNegativeDelayTime(t *testing.T) {
 	foo := outer("hello")
 
-	_, err := Create("printing", time.Second*3, time.Second*3, time.Second*(-1), foo)
+	_, err := Create(time.Second*3, time.Second*3, time.Second*(-1), foo)
 
 	if err == nil {
 		t.Error("Failed to detect error while creating task: ", err)
@@ -71,7 +71,7 @@ func Test_Task_CreateWithNegativeDelayTime(t *testing.T) {
 func Test_Task_Print(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -80,26 +80,10 @@ func Test_Task_Print(t *testing.T) {
 	task.Print()
 }
 
-func Test_Task_SetGetName(t *testing.T) {
-	foo := outer("hello")
-
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
-
-	if err != nil {
-		t.Error("Failed to create task: ", err)
-	}
-
-	task.SetName("printingChanged")
-
-	if task.GetName() != "printingChanged" {
-		t.Error("Failed to set new name: names not the same")
-	}
-}
-
 func Test_Task_SetGetPeriod(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -119,7 +103,7 @@ func Test_Task_SetGetPeriod(t *testing.T) {
 func Test_Task_SetPeriodFailure(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -135,7 +119,7 @@ func Test_Task_SetPeriodFailure(t *testing.T) {
 func Test_Task_SetGetTaskTime(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -155,7 +139,7 @@ func Test_Task_SetGetTaskTime(t *testing.T) {
 func Test_Task_SetTaskTimeFailure(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -171,7 +155,7 @@ func Test_Task_SetTaskTimeFailure(t *testing.T) {
 func Test_Task_SetGetDelay(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -191,7 +175,7 @@ func Test_Task_SetGetDelay(t *testing.T) {
 func Test_Task_SetDelayFailure(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -207,7 +191,7 @@ func Test_Task_SetDelayFailure(t *testing.T) {
 func Test_Task_SetGetDoFunc(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)
@@ -229,7 +213,7 @@ func Test_Task_SetGetDoFunc(t *testing.T) {
 func Test_Task_SetDoFuncFailure(t *testing.T) {
 	foo := outer("hello")
 
-	task, err := Create("printing", time.Second*3, time.Second*3, time.Second*1, foo)
+	task, err := Create(time.Second*3, time.Second*3, time.Second*1, foo)
 
 	if err != nil {
 		t.Error("Failed to create task: ", err)

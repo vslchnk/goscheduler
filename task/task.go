@@ -9,7 +9,6 @@ import (
 )
 
 type Task struct {
-	name     string
 	period   time.Duration
 	taskTime time.Duration
 	delay    time.Duration
@@ -17,7 +16,7 @@ type Task struct {
 }
 
 // creates task
-func Create(name string, period time.Duration, taskTime time.Duration, delay time.Duration, do func(ctx context.Context) error) (task Task, err error) {
+func Create(period time.Duration, taskTime time.Duration, delay time.Duration, do func(ctx context.Context) error) (task Task, err error) {
 	if period < 0 || taskTime < 0 || delay < 0 {
 		return task, fmt.Errorf("Period, TaskTime or Delay less than 0")
 	}
@@ -26,7 +25,6 @@ func Create(name string, period time.Duration, taskTime time.Duration, delay tim
 		return task, fmt.Errorf("No function provided")
 	}
 
-	task.name = name
 	task.period = period
 	task.taskTime = taskTime
 	task.delay = delay
@@ -37,17 +35,7 @@ func Create(name string, period time.Duration, taskTime time.Duration, delay tim
 
 // prints task's parametres
 func (t Task) Print() {
-	fmt.Printf("Name: %v; Period: %v; TaskTime: %v; Delay: %v; Do: %v\n", t.name, t.period, t.taskTime, t.delay, runtime.FuncForPC(reflect.ValueOf(t.do).Pointer()).Name())
-}
-
-// sets name of task
-func (t *Task) SetName(name string) {
-	t.name = name
-}
-
-// returns task's name
-func (t Task) GetName() string {
-	return t.name
+	fmt.Printf("Period: %v; TaskTime: %v; Delay: %v; Do: %v\n", t.period, t.taskTime, t.delay, runtime.FuncForPC(reflect.ValueOf(t.do).Pointer()).Name())
 }
 
 // sets task's period
