@@ -178,9 +178,6 @@ func (w *Worker) Stop(n int) error {
 		return fmt.Errorf("Job number %v is not working, its status: %v", n, w.jobs[n].status)
 	}
 	w.jobs[n].status = sss
-	/*if w.jobs[n].cancelCtx == nil {
-		time.Sleep(time.Nanosecond * 10000) // in case of when startJob haven't started
-	}*/
 	w.jobs[n].cancelCtx()
 	w.jobs[n].Unlock()
 
@@ -210,11 +207,8 @@ func (w *Worker) Kill(n int) error {
 		w.jobs[n].Unlock()
 		return fmt.Errorf("Job number %v is not working, its status: %v", n, w.jobs[n].status)
 	}
-	//fmt.Println("Stop", w.jobs[n].status)
+
 	w.jobs[n].status = k
-	/*if w.jobs[n].cancelCtx == nil {
-		time.Sleep(time.Nanosecond * 10000) // in case of when startJob haven't started
-	}*/
 	w.jobs[n].cancelCtx()
 	w.jobs[n].Unlock()
 
